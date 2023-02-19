@@ -1,15 +1,14 @@
-# TotalSpider
+# SuperSpider
 
 
-# 文件结构
+# File structure
 ```
-----TotalSpider
+----SuperSpider
         |----README.md
         |----docs
         |----src
               |----settings
               |----backend
               |----frontend
-              |        |----index.html
-              |----scripts
+              |----utils
 ```
