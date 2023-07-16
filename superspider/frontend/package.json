@@ -1,0 +1,14 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "description": "frontend for superspider",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Qi Xinbo",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^25.3.0"
+  }
+}
