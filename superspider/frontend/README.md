@@ -10,7 +10,8 @@
 ### 安装electron和eletron-forge
 仅项目内安装就行：
 ```sh
-npm install electron --save-dev
+npm install --save-dev electron 
+npm install --save-dev @electron-forge/cli
 ```
 全局安装则是：
 

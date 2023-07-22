@@ -4,11 +4,14 @@
   "description": "frontend for superspider",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "direct_start": "electron .",
+    "start": "electron-forge start"
   },
   "author": "Qi Xinbo",
   "license": "MIT",
   "devDependencies": {
+    "@electron-forge/cli": "^6.2.1",
     "electron": "^25.3.0"
   }
 }
