@@ -31,13 +31,28 @@ function createWindow(){
   mainWindow = new BrowserWindow({
     width: 520,
     height: 750,
+    webPreferences:{
+      preload: path.join(__dirname, 'src/preload.js')
+    },
     resizable: false
   })
   // 加载主界面的html页面
   mainWindow.loadURL(server_address+'/index.html?user_data_folder='+config.user_data_folder);
 }
 
+
+function handleOpenBrowser(event, lang="en", user_data_folder="") {
+}
+
+function handleOpenInvoke(event, lang="en"){
+
+}
+
+
 app.whenReady().then(()=>{
-  // ipcMain.on('')
-  createWindow()
+  // 创建两个IPC通道，用于监听从渲染进程发送过来的消息并做处理
+  ipcMain.on('start-design', handleOpenBrowser);
+  ipcMain.on('start-invoke', handleOpenInvoke);
+  // 创建窗口
+  createWindow();
 })

@@ -7,9 +7,8 @@
  */
 const { contextBridge, ipcRenderer } = require('electron');
 
-// 使用contextBridge定义全局对象，包括全局变量和全局函数
+// 把ipcRenderer暴露给渲染进程
 contextBridge.exposeInMainWorld('electronAPI', {
-    // 定义两个全局函数，用于渲染进程向主进程发送进程间消息
     startDesign: (lang="en", user_data_folder = '') => ipcRenderer.send('start-design', lang, user_data_folder),
     startInvoke: (lang="en") => ipcRenderer.send('start-invoke', lang),
 })
