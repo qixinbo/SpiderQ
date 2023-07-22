@@ -33,6 +33,7 @@ var app = Vue.createApp({
         request.send();
     },
     methods: {
+        // 更改语言，并关闭初始页面
         changeLang(lang = 'zh') {
             this.init = false;
             this.lang = lang;
@@ -43,13 +44,15 @@ var app = Vue.createApp({
                 if (this.user_data_folder == null || this.user_data_folder == "") {
                     if (lang == 'zh') {
                         alert("请指定用户信息目录");
-                    } else {
+                    } 
+                    else {
                         alert("Please specify the user information directory");
                     }
                     return;
                 }
                 window.electronAPI.startDesign(lang, this.user_data_folder);
-            } else {
+            } 
+            else {
                 window.electronAPI.startDesign(lang);
             }
         },
@@ -58,4 +61,3 @@ var app = Vue.createApp({
         }
     }
 }).mount('#app');
-// console.log(i18n.global.t('test'))

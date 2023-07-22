@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <script src="jquery-3.4.1.min.js"></script>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+          name="viewport">
+    <meta content="ie=edge" http-equiv="X-UA-Compatible">
+    <script src="vue.js"></script>
+    <script src="bootstrap/js/bootstrap.js"></script>
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet"></link>
+    <title>Task Invoke</title>
+    <style>
+        table {
+            table-layout: auto;
+        }
+
+        table,
+        td,
+        th,
+        tr {
+            border-color: black !important;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 400px;
+            min-width: 150px;
+        }
+
+        .ID {
+            width: 10%;
+        }
+    </style>
+</head>
+
+<body>
+<div style="position: absolute; margin-top: -10px">
+<div id="tip" class="alert alert-danger alert-dismissible fade show" style="position: fixed; width:100%;display: none; z-index: 1000">
+    提示：请先获得任务ID!</div>
+<div id="tipEN" class="alert alert-danger alert-dismissible fade show" style="position: fixed; width:100%;display: none; z-index: 1000">
+    Hint: Please get EID first!</div>
+</div>
+
+<div class="row" style="margin-top: 40px;">
+    
+    <div class="col-md-7" id="taskInfo" style="margin:0 auto" v-if="show">
+
+
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="myModalLabel">{{"Task Invocation Instruction~执行任务说明" | lang}}</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input onkeydown="inputDelete(event)" id="serviceId" type="hidden" name="serviceId" value="-1"></input>
+                        <input onkeydown="inputDelete(event)" id="url" type="hidden" name="url" value="about:blank"></input>
+                        <label>{{ `Please open a terminal (For Windows, please use PowerShell instead of CMD), go to EasySpider's folder, and then copy (Command/Ctrl + c) the following command to run the task (EasySpider cannot quit when executing command, unless --read_type is set to "local"):~请在EasySpider目录下打开命令行工具Terminal （Windows请使用PowerShell而不是CMD），然后复制（Command/Ctrl + c）和运行以下命令以执行任务（执行命令时不能退出EasySpider，除非将--read_type设置为local）：` | lang }}</label>
+                        <label><a href="https://github.com/NaiboWang/EasySpider/wiki/Argument-Instruction" target="_blank">{{`Click Here~点击这里` | lang}}</a> {{`Here to see argument instruction.~这里查看参数配置说明。` | lang}}</label>
+                        <textarea class="form-control" style="height:150px">cd {{easyspider_location}}
+{{command}} --config_folder "{{config_folder}}" --headless 0 --read_type remote --config_file_name config.json --saved_file_name </textarea>
+                    </div>
+                    <!-- <div class="modal-footer">
+                        <button type="button" id="saveAsButton" class="btn btn-outline-primary">另存为</button>
+                        <button type="button" id="saveButton" class="btn btn-primary">保存</button>
+                    </div> -->
+                </div>
+                <!-- /.modal-content -->
+            </div>
+        </div>
+        
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb" style="padding-left:0;background-color: white">
+                <li @click="gotoHome" class="breadcrumb-item"><a href="#">{{"Home~首页" | lang}}</a></li>
+                <li @click="gotoInfo" aria-current="page" class="breadcrumb-item" style="color: black"><a href="#">{{"Task Information~任务信息" | lang}}</a></li>
+                <li aria-current="page" class="breadcrumb-item active" style="color: black">{{"Task Invocation~任务调用"
+                    | lang}}
+                </li>
+            </ol>
+        </nav>
+        <h4 style="text-align: center;">{{"Task Invocation~任务调用" | lang}}</h4>
+        <p>{{"Task Name:~任务名称：" | lang}} {{task["name"]}}</p>
+        <p style="word-wrap: break-word;word-break: break-all;overflow: hidden;max-height: 100px;">{{"Task Description:~任务描述：" | lang}} {{task["desc"]}}</p>
+        <p style="word-wrap: break-word;word-break: break-all;overflow: hidden;max-height: 100px;">{{"API URL (POST):~API 调用网址（POST）：" |
+            lang}} {{backEndAddressServiceWrapper}}/invokeTask?id={{task["id"]}}</p>
+        <p style="word-wrap: break-word;word-break: break-all;overflow: hidden;max-height: 100px;">{{"Click here to see how to invoke task by API via POST request: ~点此查看通过POST方式进行API调用的示例代码：" | lang}}<a target="_blank" href="https://github.com/NaiboWang/EasySpider/wiki/API-Invoke-Example">https://github.com/NaiboWang/EasySpider/wiki/API-Invoke-Example</a></p>
+        <p>{{"Please Input Parameters:~请输入参数值：" | lang}} </p>
+        <form id="form">
+            <table class="table table-bordered">
+                <tbody>
+                <tr>
+                    <th style="min-width: 50px;">ID</th>
+                    <th>{{"Parameter Name~参数名称" | lang}}</th>
+                    <th>{{"Invoke Name~调用名称" | lang}}</th>
+                    <th>{{"Parameter Type~参数类型" | lang}}</th>
+                    <th>{{"Parameter Value~参数值" | lang}}</th>
+                </tr>
+
+                <tr v-for="i in task.inputParameters.length" v-if="task.inputParameters.length>0">
+                    <td style="min-width: 50px;">{{i}}</td>
+                    <td style="max-width: 100px;">{{task.inputParameters[i-1]["nodeName"]}}</td>
+                    <td>{{task.inputParameters[i-1]["name"]}}</td>
+                    <td style="max-width: 100px;">{{task.inputParameters[i-1]["type"]}}</td>
+                    <td><textarea class="form-control"
+                                  style="min-height: 50px;min-width: 300px;" v-bind:name="task.inputParameters[i-1]['name']"
+                                  v-model="task.inputParameters[i-1]['value']"></textarea></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="form-group" style="margin-top: 10px">
+                <label>{{"User Data Folder (If you want to load the cookie, data and extension(s) from your local browser, please set this folder path, and then cilck the 'Run with (Data Mode)' button to run the task):~用户本地浏览器数据目录（如果需要使用本地的登录信息，插件和cookie，请设置此目录，并点击下方“执行（带用户信息模式）”按钮开始执行任务）：" | lang}}</label>
+                <input type="text" class="form-control" v-model="user_data_folder"></input>
+            </div>
+        </form>
+        <label>{{"Click the button below to execute the task. Manual intervention is possible during the task execution process, ~点击以下按钮执行任务，任务执行过程中可以" | lang }}<b>{{"~人工干预，" | lang}}</b>{{"such as manually input a password or captcha (Note: set a waiting time in the task flow for manual intervention): ~如手动输入密码，验证码等（注意任务流程中设定好操作后的等待时间以用来手工干预）：" | lang}}</label>
+        <button class="btn btn-primary" v-on:click="localExecuteInstant(false)">{{"Directly Run Locally (Clean Mode)~本地直接执行（纯净模式）" |
+            lang}}
+        </button>
+        <button class="btn btn-primary" v-on:click="localExecuteInstant(true)">{{"Directly Run Locally (Data Mode)~本地直接执行（带用户信息模式）" |
+            lang}}
+        </button>
+        <!-- <button style="margin-left: 5px;" v-on:click="remoteExcuteInstant" class="btn btn-primary">Directly Run Remotely</button> -->
+        <div style="margin-bottom: 10px;">
+            <label style="margin-top: 10px;">{{"Execution ID (EID):~执行ID：" | lang}}</label>
+            <input class="form-control" v-model="ID"></input>
+            <p></p>
+            <!-- <p>提示：点击下方按钮获得任务ID，然后根据此ID进行服务执行；也可自己POST调用接口得到ID，具体参照POST调用文档。</p> -->
+            <p>{{"Hint: Click the \"Get Execution ID\" button at the bottom to get the task ID, and click the \"Execute task by commandline\" button at the back to get the prompt command on how to run this task using the command line.~提示：点击下方“获得任务执行ID”按钮得到任务ID，点击后面的“使用命令行执行任务”按钮获得如何使用命令行运行任务的提示命令。" | lang}}</p>
+            <button class="btn btn-primary" href="javascript:void(0)" v-on:click="invokeTask">{{"Get Execution ID~获得任务执行ID" |
+                lang}}</button>
+            <button class="btn btn-primary" style="margin-left: 8px;" v-on:click="localExecute(false)">{{"Execute task by commandline (Clean Mode)~使用命令行执行任务（纯净模式）"
+                | lang}}
+            </button>
+            <button class="btn btn-primary" style="margin-left: 8px;" v-on:click="localExecute(true)">{{"Execute task by commandline (Data Mode)~使用命令行执行任务（带用户信息模式）"
+                | lang}}
+            </button>
+            <!-- <button v-on:click="remoteExcute" style="margin-left: 8px;" class="btn btn-primary">Run remotely</button></div> -->
+        </div>
+
+    </div>
+</div>
+
+</body>
+
+</html>
+
+<style>
+    button{
+        margin-top: 5px;
+    }
+</style>
+<script src="global.js"></script>
+<script>
+    var sId = getUrlParam('id');
+    var app = new Vue({
+        el: '#taskInfo',
+        data: {
+            task: {},
+            show: false, //是否渲染
+            ID: "",
+            user_data_folder:"",
+            with_user_data: true,
+            backEndAddressServiceWrapper: getUrlParam("backEndAddressServiceWrapper"),
+            command: "./easyspider_executestage ",
+            config_folder: "",
+            easyspider_location: "",
+        }, mounted() {
+        $.get(this.backEndAddressServiceWrapper + "/getConfig", function (result) {
+            app.$data.user_data_folder = result.user_data_folder;
+        });
+        //TODO 翻译  写清楚readme有关浏览器版本的问题  logo更换 提示看文档来运行
+    },
+        methods: {
+            gotoHome: function () {
+                let url = "";
+                if (getUrlParam("lang") == "zh") {
+                    url = "taskList.html?lang=zh&type="+getUrlParam("type")+"&wsport="+getUrlParam("wsport")+"&backEndAddressServiceWrapper=" + app.$data.backEndAddressServiceWrapper
+                } else {
+                    url = "taskList.html?lang=en&type="+getUrlParam("type")+"&wsport="+getUrlParam("wsport")+"&backEndAddressServiceWrapper=" + app.$data.backEndAddressServiceWrapper
+                }
+                window.location.href = url;
+            }, gotoInfo: function () {
+                let url = "";
+                if (getUrlParam("lang") == "zh") {
+                    url = "taskInfo.html?id="+getUrlParam("id")+"&lang=zh&type="+getUrlParam("type")+"&wsport="+getUrlParam("wsport")+"&backEndAddressServiceWrapper=" + app.$data.backEndAddressServiceWrapper
+                } else {
+                    url = "taskInfo.html?id="+getUrlParam("id")+"&lang=en&type="+getUrlParam("type")+"&wsport="+getUrlParam("wsport")+"&backEndAddressServiceWrapper=" + app.$data.backEndAddressServiceWrapper
+                }
+                window.location.href = url;
+            }, invokeTask: function () {
+                let text = "";
+                // if (getUrlParam("lang") == "en" || getUrlParam("lang") == "") {
+                //     text = "Are you sure to get the Execution ID (EID) of current running task?";
+                // } else {
+                //     text = "确定要获得当前运行任务的执行ID吗？";
+                // }
+                // if (confirm(text)) {
+                let para = {};
+                let t = $('#form').serializeArray();
+                t.forEach(function (item, index) {
+                    para[item.name] = item.value;
+                });
+                $.post(app.$data.backEndAddressServiceWrapper + "/invokeTask", {
+                    id: this.task.id,
+                    paras: JSON.stringify(para)
+                }, function (result) {
+                    app.$data.ID = result; //得到返回的ID
+                });
+                // }
+            },
+            localExecute: function (with_user_data=false) {
+                if (this.ID === "") {
+                    if (getUrlParam("lang") == "en" || getUrlParam("lang") == "") {
+                        $("#tipEN").slideDown(); //提示框
+                        setTimeout(function() {
+                            $("#tipEN").slideUp();
+                        }, 3000);
+                    } else {
+                        $("#tip").slideDown(); //提示框
+                        setTimeout(function() {
+                            $("#tip").slideUp();
+                        }, 3000);
+                    }
+                    return;
+                }
+                this.with_user_data = with_user_data;
+                let text = "";
+                // if (getUrlParam("lang") == "en" || getUrlParam("lang") == "") {
+                //     text = "Are you sure to run this task locally?";
+                // } else {
+                //     text = "确定要在本地运行此任务吗？";
+                // }
+                // if (confirm(text)) {
+                    let message = { //显示flowchart
+                        type: 5, //消息类型，调用执行程序
+                        message: {
+                            "id": app.$data.ID,
+                            "user_data_folder": app.$data.with_user_data ? app.$data.user_data_folder : "",
+                            "execute_type": 0,
+                        }
+                    };
+                    ws.send(JSON.stringify(message));
+                    changeCommand();
+                $('#myModal').modal('show');
+                // }
+            },
+            remoteExecute: function () {
+
+            },
+            localExecuteInstant: function (with_user_data=false) {
+                let text = "";
+                // if (getUrlParam("lang") == "en" || getUrlParam("lang") == "") {
+                //     text = "Are you sure to run this task locally now?";
+                // } else {
+                //     text = "确定要立即在本地运行此任务吗？";
+                // }
+                
+                this.with_user_data = with_user_data;
+                // if (confirm(text)) {
+                    let para = {};
+                    let t = $('#form').serializeArray();
+                    t.forEach(function (item, index) {
+                        para[item.name] = item.value;
+                    });
+                    $.post(app.$data.backEndAddressServiceWrapper + "/invokeTask", {
+                        id: this.task.id,
+                        paras: JSON.stringify(para)
+                    }, function (result) {
+                        let message = { //显示flowchart
+                            type: 5, //消息类型，调用执行程序
+                            message: {
+                                "id": result,
+                                "user_data_folder": app.$data.with_user_data ? app.$data.user_data_folder : "",
+                                "execute_type": 1,
+                            }
+                        };
+                        app.$data.ID = result;
+                        ws.send(JSON.stringify(message));
+                        $.get(app.$data.backEndAddressServiceWrapper + "/queryOSVersion", function (OSInfo) {
+                            if(OSInfo.version == 'darwin'){
+                                changeCommand();
+                                $('#myModal').modal('show');
+                            }
+                        });
+                    });
+                // }
+            },
+            remoteExecuteInstant: function () {
+            },
+        }
+    });
+    
+    function changeCommand() {
+        $.get(app.$data.backEndAddressServiceWrapper + "/queryOSVersion", function (OSInfo) {
+            if(OSInfo.version == 'win32' && OSInfo.bit == 'x64'){
+                app.$data.command = "./EasySpider/resources/app/chrome_win64/easyspider_executestage.exe --id [" + app.$data.ID.toString() + "] --user_data " + (app.$data.with_user_data ? "1" : "0") + " --server_address " + app.$data.backEndAddressServiceWrapper;
+            } else if(OSInfo.version == 'win32' && OSInfo.bit == 'ia32'){
+                app.$data.command = "./EasySpider/resources/app/chrome_win32/easyspider_executestage.exe --id [" + app.$data.ID.toString() + "] --user_data " + (app.$data.with_user_data ? "1" : "0") + " --server_address " + app.$data.backEndAddressServiceWrapper;
+            } else if(OSInfo.version == 'linux'){
+                app.$data.command = "./EasySpider/resources/app/chrome_linux64/easyspider_executestage --id '[" + app.$data.ID.toString() + "]' --user_data " + (app.$data.with_user_data ? "1" : "0") + " --server_address " + app.$data.backEndAddressServiceWrapper;
+            } else if(OSInfo.version == 'darwin'){
+                if(getUrlParam("lang") == "zh"){
+                    app.$data.easyspider_location = "你的EasySpider文件夹，如：cd /Users/"+ app.$data.config_folder.split("/")[2] + "/Downloads/EasySpider_MacOS_all_arch";
+                } else {
+                    app.$data.easyspider_location = "Your EasySpider folder, such as: cd /Users/"+ app.$data.config_folder.split("/")[2] + "/Downloads/EasySpider_MacOS_all_arch";
+                }
+                app.$data.command = "./easyspider_executestage --id '[" + app.$data.ID.toString() + "]' --user_data " + (app.$data.with_user_data ? "1" : "0") + " --server_address " + app.$data.backEndAddressServiceWrapper;
+            }
+        });
+    }
+
+    $.get(app.$data.backEndAddressServiceWrapper + "/queryTask?id=" + sId, function (result) {
+        app.$data.task = result;
+        app.$data.show = true;
+    });
+    
+    ws = new WebSocket("ws://localhost:"+getUrlParam("wsport"));
+    ws.onopen = function () {
+        // Web Socket 已连接上，使用 send() 方法发送数据
+        console.log("Connected");
+        message = {
+            type: 0, //消息类型，0代表链接操作
+            message: {
+                id: 1, //socket id
+            }
+        };
+        this.send(JSON.stringify(message));
+    };
+    ws.onmessage = function(message){
+        message = JSON.parse(message.data);
+        app.$data.config_folder = message.config_folder;
+        app.$data.easyspider_location = message.easyspider_location.replace("/EasySpider.app/","");
+    }
+    ws.onclose = function () {
+        // 关闭 websocket
+        console.log("连接已关闭...");
+    };
+</script>
