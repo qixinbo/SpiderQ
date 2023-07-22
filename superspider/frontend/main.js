@@ -12,7 +12,10 @@ const task_server = require(path.join(__dirname, 'server.js'));
 let config = fs.readFileSync(path.join(task_server.getDir(), 'config.json'), 'utf8')
 config = JSON.parse(config)
 
-// 启动服务器
+// 构造后台服务器的地址和端口号
+let server_address = `${config.webserver_address}:${config.webserver_port}`
+
+// 启动后台服务器，用于监听前端和后端的请求
 task_server.start(config.webserver_port)
 
 
@@ -30,6 +33,8 @@ function createWindow(){
     height: 750,
     resizable: false
   })
+  // 加载主界面的html页面
+  mainWindow.loadURL(server_address+'/index.html?user_data_folder='+config.user_data_folder);
 }
 
 app.whenReady().then(()=>{
