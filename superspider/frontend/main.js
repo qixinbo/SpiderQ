@@ -5,13 +5,16 @@ const path = require('path');
 // 加载electron相关模块
 const {app, ipcMain, BrowserWindow, screen} = require('electron')
 // 加载selenium相关模块
+const {Builder, By, Key, until} = require("selenium-webdriver");
 const {ServiceBuilder} = require('selenium-webdriver/chrome');
+const chrome = require('selenium-webdriver/chrome');
 // 加载图标
 const icon_path = path.join(__dirname, 'favicon.ico');
 // 加载自定义的server.js
 const task_server = require(path.join(__dirname, 'server.js'));
+const ws_server = require(path.join(__dirname, 'server_ws.js'));
 // 配置web socket 端口
-const websocket_port = 8084; //目前只支持8084端口，写死，因为扩展里面写死了
+const websocket_port = ws_server.websocket_port;
 
 // 读取配置文件
 let config = fs.readFileSync(path.join(task_server.getDir(), 'config.json'), 'utf8')
@@ -23,11 +26,14 @@ let server_address = `${config.webserver_address}:${config.webserver_port}`
 
 // 启动后台服务器，用于监听前端和后端的请求
 task_server.start(config.webserver_port)
+ws_server.start()
 
 
 let driver_path = "";
 let chrome_binary_path = "";
 let execute_path = "";
+let driver = null;
+
 
 driver_path = path.join("/Users/qixinbo/Projects/EasySpider/ElectronJS/", "chromedriver_mac64/chromedriver");
 chrome_binary_path = path.join("/Applications/Google Chrome.app/", "Contents/MacOS/Google Chrome");
@@ -38,7 +44,7 @@ function createWindow(){
     width: 520,
     height: 750,
     webPreferences:{
-      preload: path.join(__dirname, 'src/preload.js')
+      preload: path.join(__dirname, 'preload.js')
     },
     resizable: false
   })
@@ -48,26 +54,21 @@ function createWindow(){
 
 
 async function runBrowser(lang="en", user_data_folder='') {
-  console.log("-------------- start to create serviceBuilder --------------")
-  console.log("drive_path = ", driver_path)
   const serviceBuilder = new ServiceBuilder(driver_path);
-  console.log("-------------- driver loaded OK --------------")
   let options = new chrome.Options();
   options.addArguments('--disable-blink-features=AutomationControlled');
   language = lang;
-  // if (lang == "en") {
-  //   options.addExtensions(path.join(__dirname, "EasySpider_en.crx"));
-  // } 
-  // else if (lang == "zh") {
-  //   options.addExtensions(path.join(__dirname, "EasySpider_zh.crx"));
-  // }
+  // 加载在浏览器上进行操作的插件
+  if (lang == "en") {
+    options.addExtensions(path.join(__dirname, "resources/EasySpider_en.crx"));
+  } 
+  else if (lang == "zh") {
+    options.addExtensions(path.join(__dirname, "resources/EasySpider_zh.crx"));
+  }
   // options.addExtensions(path.join(__dirname, "XPathHelper.crx"));
   options.setChromeBinaryPath(chrome_binary_path);
-  console.log("-------------- chrome loaded OK --------------")
-  options.add
   if (user_data_folder != "") {
       let dir = path.join(task_server.getDir(), user_data_folder);
-      console.log(dir);
       options.addArguments("--user-data-dir=" + dir);
       config.user_data_folder = user_data_folder;
       fs.writeFileSync(path.join(task_server.getDir(), "config.json"), JSON.stringify(config));
@@ -80,13 +81,13 @@ async function runBrowser(lang="en", user_data_folder='') {
   await driver.manage().setTimeouts({implicit: 10000, pageLoad: 10000, script: 10000});
   await driver.executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
   const cdpConnection = await driver.createCDPConnection("page");
-  let stealth_path = path.join(__dirname, "src/", "stealth.min.js");
-  console.log(stealth_path)
+  let stealth_path = path.join(__dirname, "src/js/", "stealth.min.js");
   let stealth = fs.readFileSync(stealth_path, 'utf8');
   await cdpConnection.execute('Page.addScriptToEvaluateOnNewDocument', {
       source: stealth,
   });
   try {
+      // 打开任务列表页面
       await driver.get(server_address + "/taskGrid/taskList.html?wsport=" + websocket_port + "&backEndAddressServiceWrapper=" + server_address + "&lang=" + lang);
       old_handles = await driver.getAllWindowHandles();
       current_handle = old_handles[old_handles.length - 1];
@@ -128,7 +129,21 @@ function handleOpenBrowser(event, lang="en", user_data_folder="") {
 }
 
 function handleOpenInvoke(event, lang="en"){
-
+  const window = new BrowserWindow({icon: icon_path});
+  let url = "";
+  language = lang;
+  if (lang == "en") {
+      url = server_address + `/taskGrid/taskList.html?type=1&wsport=${websocket_port}&backEndAddressServiceWrapper=` + server_address;
+  } else if (lang == "zh") {
+      url = server_address + `/taskGrid/taskList.html?type=1&wsport=${websocket_port}&backEndAddressServiceWrapper=` + server_address + "&lang=zh";
+  }
+  // and load the index.html of the app.
+  window.loadURL(url);
+  window.maximize();
+  mainWindow.hide();
+  window.on('close', function (event) {
+      mainWindow.show();
+  });
 }
 
 
