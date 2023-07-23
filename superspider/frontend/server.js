@@ -34,6 +34,18 @@ function getDir(){
   return __dirname;
 }
 
+function getEasySpiderLocation(){
+    if(__dirname.indexOf("app") >= 0 && __dirname.indexOf("sources") >= 0){
+        if(process.platform == "darwin"){
+            return path.join(__dirname,"../../../");
+        } else {
+            return path.join(__dirname,"../../../");
+        }
+    } else {
+        return __dirname;
+    }
+}
+
 function start(port = 8074){
   http.createServer(function(req, res){
     let body = ""; 
@@ -274,5 +286,5 @@ function start(port = 8074){
 }
 
 exports.getDir = getDir;
-exports.start = start
-
+exports.getEasySpiderLocation = getEasySpiderLocation;
+exports.start = start;
