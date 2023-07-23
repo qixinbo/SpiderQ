@@ -2,11 +2,17 @@ const WebSocket = require('ws');
 let socket_window = null;
 let socket_start = null;
 let socket_flowchart = null;
+let handle_pairs = {};
 // 配置web socket 端口
 const websocket_port = 8084; //目前只支持8084端口，写死，因为扩展里面写死了
 let wss = new WebSocket.Server({port: websocket_port});
 
-async function beginInvoke(msg, ws) {
+
+function arrayDifference(arr1, arr2) {
+    return arr1.filter(item => !arr2.includes(item));
+}
+
+async function beginInvoke(msg, ws, server_address) {
     if (msg.type == 1) {
         if (msg.message.id != -1) {
             let url = "";
@@ -149,7 +155,7 @@ async function beginInvoke(msg, ws) {
     }
 }
 
-function start(){
+function start(driver, server_address){
   wss.on('connection', function (ws) {
       ws.on('message', async function (message, isBinary) {
           let msg = JSON.parse(message.toString());
@@ -182,13 +188,14 @@ function start(){
               let leave_handle = handle_pairs[msg.message.id];
               if (leave_handle!=null && leave_handle!=undefined && leave_handle!="")
               {
+                  console.log("driver swith ----------")
                   await driver.switchTo().window(leave_handle);
                   console.log("Switch to handle: ", leave_handle);
                   current_handle = leave_handle;
               }
           }
           else {
-              await beginInvoke(msg, ws);
+              await beginInvoke(msg, ws, server_address);
           }
       });
   });

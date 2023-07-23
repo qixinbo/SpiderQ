@@ -1,3 +1,7 @@
+# tasks
+tasks/
+execution_instances/
+
 # Logs
 logs
 *.log

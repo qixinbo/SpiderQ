@@ -41,7 +41,7 @@ function start(port = 8074){
     res.setHeader("Access-Control-Allow-Origin", "*")
     // 解析请求的参数
     const pathName = url.parse(req.url).pathname;
-    console.log("***************** load file ***********************")
+    // console.log("***************** load file ***********************")
     console.log("pathName = ", pathName)
     // 判断请求来自于前端还是后端
     if(pathName.indexOf(".") < 0) { // 此时为后台请求
@@ -72,7 +72,7 @@ function start(port = 8074){
         }
       })
     }
-    console.log("***************** finished ***********************")
+    // console.log("***************** finished ***********************")
     req.on('data', function(chuck){
       body += chuck;
     });
