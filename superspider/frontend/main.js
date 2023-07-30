@@ -45,16 +45,18 @@ driver_path = path.join(__dirname, "resources/chromedriver");
 chrome_binary_path = path.join("/Applications/Google Chrome.app/", "Contents/MacOS/Google Chrome");
 execute_path = path.join(__dirname, "");
 
+// 创建窗口
 function createWindow(){
   mainWindow = new BrowserWindow({
     width: 520,
     height: 750,
+    // 预加载，在渲染进程中创建两个startDesign和startInvoke的api，后续window对象可以调用这两个api向主进程发送消息
     webPreferences:{
       preload: path.join(__dirname, 'preload.js')
     },
     resizable: false
   })
-  // 加载主界面的html页面
+  // 加载index.html页面，即起始的主界面，加载的方式是通过传入server.js所启动的服务器承载的url
   mainWindow.loadURL(server_address+'/index.html?user_data_folder='+config.user_data_folder);
 }
 
@@ -247,16 +249,18 @@ wss.on('connection', function (ws) {
 async function runBrowser(lang="en", user_data_folder='') {
   const serviceBuilder = new ServiceBuilder(driver_path);
   let options = new chrome.Options();
+  // disable-blink-features 是一个启动参数，它可以用来隐藏 navigator.webdriver 的值，从而防止被一些网站检测出使用了自动化工具
   options.addArguments('--disable-blink-features=AutomationControlled');
   language = lang;
-  // 加载在浏览器上进行操作的插件
+  // 加载在浏览器上进行操作的插件，插件的编写在另一个仓库
   if (lang == "en") {
     options.addExtensions(path.join(__dirname, "resources/EasySpider_en.crx"));
   } 
   else if (lang == "zh") {
     options.addExtensions(path.join(__dirname, "resources/EasySpider_zh.crx"));
   }
-  // options.addExtensions(path.join(__dirname, "XPathHelper.crx"));
+  // 加载XPathHelper插件
+  options.addExtensions(path.join(__dirname, "XPathHelper.crx"));
   options.setChromeBinaryPath(chrome_binary_path);
   if (user_data_folder != "") {
       let dir = path.join(task_server.getDir(), user_data_folder);
@@ -265,14 +269,17 @@ async function runBrowser(lang="en", user_data_folder='') {
       fs.writeFileSync(path.join(task_server.getDir(), "config.json"), JSON.stringify(config));
   }
   driver = new Builder()
-      .forBrowser('chrome')
+      .forBrowser('chrome')  // 设置目标浏览器为chrome
       .setChromeOptions(options)
       .setChromeService(serviceBuilder)
       .build();
   console.log("********* driver is created ************")
 
+  // 设置浏览器的超时
   await driver.manage().setTimeouts({implicit: 10000, pageLoad: 10000, script: 10000});
+  // 执行一段 JavaScript 代码，从而实现一些 WebDriver 本身不能做到的操作
   await driver.executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
+  // driver.createCDPConnection()：这个方法可以用来创建一个与 Chrome DevTools Protocol 的连接，从而实现一些高级的功能，如模拟地理位置、监听控制台日志、捕获 JS 异常等。这个方法返回一个 Promise 对象，需要使用 await 关键字或 then 方法来获取连接对象。
   const cdpConnection = await driver.createCDPConnection("page");
   let stealth_path = path.join(__dirname, "src/js/", "stealth.min.js");
   let stealth = fs.readFileSync(stealth_path, 'utf8');
@@ -289,9 +296,12 @@ async function runBrowser(lang="en", user_data_folder='') {
   }
 }
 
+// 主进程接收到从渲染进程发送的start-design消息后，就会调用如下函数
 function handleOpenBrowser(event, lang="en", user_data_folder="") {
-  const webContents = event.sender;
-  const win = BrowserWindow.fromWebContents(webContents);
+  // 获取该事件的发送者
+  // const webContents = event.sender;
+  // 从发送者这里获取BrowserWindow对象，即这里的win应该跟mainWindow是同一个对象
+  // const win = BrowserWindow.fromWebContents(webContents);
   runBrowser(lang, user_data_folder);
   let size = screen.getPrimaryDisplay().workAreaSize;
   let width = parseInt(size.width);
@@ -339,6 +349,7 @@ function handleOpenInvoke(event, lang="en"){
   });
 }
 
+// 入口函数
 app.whenReady().then(()=>{
   // 创建两个IPC通道，用于监听从渲染进程发送过来的消息并做处理
   ipcMain.on('start-design', handleOpenBrowser);

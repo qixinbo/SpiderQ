@@ -38,6 +38,7 @@ var app = Vue.createApp({
             this.init = false;
             this.lang = lang;
         },
+        // 开始设计
         startDesign(lang, with_data = false) {
             if (with_data) {
                 console.log(this.user_data_folder)
@@ -53,6 +54,7 @@ var app = Vue.createApp({
                 window.electronAPI.startDesign(lang, this.user_data_folder);
             } 
             else {
+                // 调用渲染进程中的全局函数startDesign，该函数在preload中被预加载，会向主进程发送start_design这个消息
                 window.electronAPI.startDesign(lang);
             }
         },

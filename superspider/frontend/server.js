@@ -53,7 +53,8 @@ function start(port = 8074){
     res.setHeader("Access-Control-Allow-Origin", "*")
     // 解析请求的参数
     const pathName = url.parse(req.url).pathname;
-    // console.log("***************** load file ***********************")
+    console.log("***************** load file ***********************")
+    console.log("url = ", req.url)
     console.log("pathName = ", pathName)
     // 判断请求来自于前端还是后端
     if(pathName.indexOf(".") < 0) { // 此时为后台请求
@@ -62,7 +63,7 @@ function start(port = 8074){
     }
     else { // 此时为前端请求
       console.log("请求来自前台")
-      // 读取src下的文件，并执行回调函数
+      // 异步方式读取src下的文件，并执行回调函数
       fs.readFile(path.join(__dirname, "src", pathName), async(err, data) => {
         // 如果读取出错，返回一个404的网页
         if(err){
@@ -84,8 +85,9 @@ function start(port = 8074){
         }
       })
     }
-    // console.log("***************** finished ***********************")
     req.on('data', function(chuck){
+      console.log("data = ", data);
+      console.log("chuck = ", chuck);
       body += chuck;
     });
 
