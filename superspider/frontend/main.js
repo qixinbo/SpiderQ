@@ -41,7 +41,7 @@ function arrayDifference(arr1, arr2) {
     return arr1.filter(item => !arr2.includes(item));
 }
 
-driver_path = path.join("/Users/qixinbo/Projects/EasySpider/ElectronJS/", "chromedriver_mac64/chromedriver");
+driver_path = path.join(__dirname, "resources/chromedriver");
 chrome_binary_path = path.join("/Applications/Google Chrome.app/", "Contents/MacOS/Google Chrome");
 execute_path = path.join(__dirname, "");
 

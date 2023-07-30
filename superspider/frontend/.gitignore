@@ -2,6 +2,9 @@
 tasks/
 execution_instances/
 
+# resources
+resources/chromedriver
+
 # Logs
 logs
 *.log
